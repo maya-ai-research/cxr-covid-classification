@@ -127,6 +127,8 @@ def test(results_save_path, dset,tset,img_dir, split_test, split_name, model, ba
 	output_list = []
 	label_list = []
 	preds_list = []
+	scores_list=[]
+	fnames_list=[]
 
 	with torch.no_grad():
 		# Iterate over data.
@@ -158,13 +160,17 @@ def test(results_save_path, dset,tset,img_dir, split_test, split_name, model, ba
 			outputs = outputs.data.cpu().numpy()
 
 			#lav Image Name Printing
-			#for j in range(len(img_names)):
-			#	print(str(img_names[j]) + ': ' + str(score_np[j]) + ' GT: ' + str(labels_print[j]))
+			# for j in range(len(img_names)):
+			# 	print(str(img_names[j]) + ': ' + str(score_np[j]) + ' GT: ' + str(labels_print[j]))
 
 			for i in range(outputs.shape[0]):
 				output_list.append(outputs[i].tolist())
 				label_list.append(labels_auc[i].tolist())
 				preds_list.append(preds_np[i].tolist())
+				scores_list.append(score_np[i].tolist())
+				# print (img_names[i])
+				# print ('343')
+				fnames_list.append(img_names[i])
 
 			# running_corrects += torch.sum(preds == labels.data)
 			# labels = labels.type(torch.cuda.FloatTensor)
@@ -197,7 +203,10 @@ def test(results_save_path, dset,tset,img_dir, split_test, split_name, model, ba
 	"true_positive" : tp, "false_positive" :fp,"true_negative" :tn, "false_negative" :fn , "sensitivity" : sensitivity, "specificity" : specificity,
 	 "precision" :precision, "recall": recall, "f1":f1, "PPV":PPV, "NPV" :NPV}
 	
-	
+	data_logits = list(zip(fnames_list, label_list,preds_list, output_list,scores_list))
+	data_logits_df = pd.DataFrame(data_logits, columns=['fname','gt', 'pred', 'output', 'score'])
+	data_logits_df.to_csv(results_save_path + args.arch+'_'+dset+'_test_'+tset+'.csv')
+
 	# Plot all ROC curves
 	plt.figure()
 	plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.4f)' % roc_auc)
@@ -208,7 +217,7 @@ def test(results_save_path, dset,tset,img_dir, split_test, split_name, model, ba
 	plt.ylabel('True Positive Rate')
 	plt.title('ROC curve of abnormal/normal classification: '+args.arch)
 	plt.legend(loc="lower right")
-	plt.savefig(results_save_path + 'ROC_'+args.arch+'_'+dset+'_test_'+tset+'.pdf', bbox_inches='tight')
+	plt.savefig(results_save_path + 'plots/ROC_'+args.arch+'_'+dset+'_test_'+tset+'.pdf', bbox_inches='tight')
 	plt.show()
 
 	return metrics_dict
